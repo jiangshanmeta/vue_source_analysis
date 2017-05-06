@@ -75,7 +75,7 @@ _.memoize = function(func, hasher) {
 		var cache = memoize.cache;
 		var address = '' + (hasher ? hasher.apply(this, arguments) : key);
 		if (!_.has(cache, address)) cache[address] = func.apply(this, arguments);
-			return cache[address];
+		return cache[address];
 	};
 	memoize.cache = {};
 	return memoize;
@@ -156,7 +156,7 @@ function isReserved (str) {
 }
 ```
 
-一般有个默认的规范是以```_```开头的为私有，在vue中原型上的公有方法以```$```开头，因而这两个作为保留字
+一般有个默认的规范是以```_```开头的为私有，在vue中一些属性和方法以```$```开头，因而这两个作为保留字
 
 
 #### isNative
