@@ -26,7 +26,6 @@ Vue.prototype.$on = function (event, fn) {
 ```javascript
 Vue.prototype.$on = function (event, fn) {
 	var this$1 = this;
-
 	var vm = this;
 	if (typeof event === 'object') {
 		for(key in event){
@@ -42,4 +41,4 @@ Vue.prototype.$on = function (event, fn) {
 };
 ```
 
-我考虑的是传入一个对象，对象的键是事件名，值是回调。jQuery中经常看到允许这样传参的方法。
+上面是我修改的代码，我考虑的是传入一个对象，对象的键是事件名，值是回调。jQuery中经常见到这样设计的API。
