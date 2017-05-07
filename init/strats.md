@@ -15,25 +15,46 @@ var defaultStrat = function (parentVal, childVal) {
 
 上面是默认的处理方法，代码上没有什么太难理解的。比如```el```字段，这个字段没有预置，只有我们自己传递的，最终是原样返回了传入的```el```字段。
 
-#### 钩子处理策略
+#### 数组化处理策略
 
-vue提供了诸如```beforeCreate```、```created```这样的钩子，这些钩子的预处理处理方式都是一致的。
+这个策略考虑的是parent和child都有相关字段，而且都要进行保留，于是就把他们放在了一个数组中了。比如说各种钩子、watch字段。
 
 ```javascript
-function mergeHook (
-  parentVal,
-  childVal
-) {
-  return childVal
-    ? parentVal
-      ? parentVal.concat(childVal)
-      : Array.isArray(childVal)
-        ? childVal
-        : [childVal]
-    : parentVal
-}
+strats.watch = function (parentVal, childVal) {
+  if (!childVal) { return Object.create(parentVal || null) }
+  if (!parentVal) { return childVal }
+  var ret = {};
+  extend(ret, parentVal);
+  for (var key in childVal) {
+    var parent = ret[key];
+    var child = childVal[key];
+    if (parent && !Array.isArray(parent)) {
+      parent = [parent];
+    }
+    ret[key] = parent
+      ? parent.concat(child)
+      : [child];
+  }
+  return ret
+};
 ```
 
-最终的结果是得到一个数组，数组中的每个元素是个function。
+#### 覆盖处理策略
 
-#### 
+同样是parent和child都有相关字段，这个处理方式考虑的是抛弃掉parent的相关字段，采用child的字段。这个处理方式适用于methods、computed和props。
+
+```javascript
+strats.props =
+strats.methods =
+strats.computed = function (parentVal, childVal) {
+  if (!childVal) { return Object.create(parentVal || null) }
+  if (!parentVal) { return childVal }
+  var ret = Object.create(null);
+  extend(ret, parentVal);
+  extend(ret, childVal);
+  return ret
+};
+```
+
+#### data处理策略
+
