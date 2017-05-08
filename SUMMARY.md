@@ -11,6 +11,7 @@
 	* [Watcher](init/watcher.md)
 	* [computed初始化](init/computed.md)
 	* [watch初始化](init/watch.md)
+* [mixin](mixin.md)
 * [实例方法/数据](data/README.md)
 	* [$watch](data/watch.md)
 	* [$set](data/set.md)
