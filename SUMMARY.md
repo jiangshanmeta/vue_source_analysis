@@ -7,7 +7,7 @@
 	* [负责依赖收集的Dep](init/dep.md)
 	* [Observer](init/observer.md)
 	* [观察对象变化](init/object.md)
-	* [观察array变化](arrar.md)
+	* [观察array变化](array.md)
 	* [Watcher](init/watcher.md)
 	* [computed初始化](init/computed.md)
 	* [watch初始化](init/watch.md)
