@@ -34,7 +34,7 @@ var Observer = function Observer (value) {
   // observer关联到数据
   this.value = value;
   this.dep = new Dep();
-  // vmCount用途暂不明，TODO
+  // vmCount一个用途是表明是否是根数据元素，TODO
   this.vmCount = 0;
   // 数据关联到observer
   def(value, '__ob__', this);
@@ -88,7 +88,7 @@ function defineReactive$$1 (obj,key,val,customSetter) {
       // 收集依赖的原理
       if (Dep.target) {
         dep.depend();
-        // childOb对应的dep也要收集依赖，原因见$set的分析
+        // childOb对应的dep也要收集依赖，因为两个dep反应的是同一个对象与watcher的关系
         if (childOb) {
           childOb.dep.depend();
         }
@@ -170,7 +170,8 @@ var arrayMethods = Object.create(arrayProto);
     }
     // 观察新添加的数据
     if (inserted) { ob.observeArray(inserted); }
-    // 通过dep通知数据更新
+
+    // observer实例上dep实例通知watcher数据更新
     ob.dep.notify();
     return result
   });
@@ -194,10 +195,7 @@ function copyAugment (target, src, keys) {
 要理解上面这段代码，需要理解原型链的原理，在此基础上才能明白```arrayMethods```这个对象是如何起作用的。```protoAugment```方法是在要观察的数组和```Array.prototype```之间插了一层，当访问```push```等方法时，会使用```arrayMethods```上定义的相关方法。```copyAugment```是把```arrayMethods```上重载的几个方法关联到了要观察的数组上，当访问```push```等方法时，会直接访问自身的```push```方法。
 
 
+对于一个对象，它可以有两个相关的dep实例，一个在defineReactive函数中生成(以下称为游离的dep实例)(更准确的说法是和键相关联的dep)，一个是在observer构造函数中生成(以下称为结合的dep实例)，因为这两个dep反应的数据是一个，所以对应的watcher也应一致，所以才有了```if (childOb) {childOb.dep.depend();}```。当为这个对象增加($set)或删除属性($delete)时，会通过结合的dep实例通知watcher。
 
 
-
-
-
-
-
+对于一个数组，它只有一个相关的dep实例，是挂在observer上的，数组数据更新(在重载的变异方法中)需要通过这个dep实例通知watcher数据变化。
