@@ -42,8 +42,9 @@ Dep.prototype.notify = function notify () {
 deps和watcher是相互关联的，可以想到watcher也会维护一个deps队列。dep和watcher建立联系的入口是```depend```方法，你可能会好奇为什么要有这么个入口，你可能试着去掉```depend```方法然后把相互关联功能放到addSub方法中：
 
 ```javascript
-Dep.prototype.addSub = function(watcher){
-	if(!Dep.target){
+Dep.prototype.addSub = function(){
+  var watcher = Dep.target;
+	if(!watcher){
 		return;
 	}
 	// 判断watcher是否关联到了dep
