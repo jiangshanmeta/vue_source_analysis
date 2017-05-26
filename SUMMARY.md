@@ -7,6 +7,7 @@
 	* [$watch](reactivity/watch.md)
 	* [$set](reactivity/set.md)
 	* [$delete](reactivity/delete.md)
+	* [异步更新队列](reactivity/nexttick.md)
 * [初始化](init/README.md)
 	* [预处理策略](init/strats.md)
 	* [methods初始化](init/methods.md)

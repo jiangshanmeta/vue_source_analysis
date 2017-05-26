@@ -1,35 +1,47 @@
-Watcher是一个用的比较广泛的类，就目前我所知，它用在了computed和watch的实现上。我们先看一下它的构造函数：
+在Vue的各个相关类中，Watcher类起到了中心枢纽的功能，响应式数据的变化通过dep通知到watcher，watcher通过其原型上的各个方法和回调函数实现computed、watch、渲染视图等功能。
+
 
 ```javascript
+var uid$2 = 0;
+
 var Watcher = function Watcher (vm,expOrFn,cb,options) {
-  // 与vue实例相互关联
+  // 与vue实例互相关联
   this.vm = vm;
   vm._watchers.push(this);
-  // options
+
   if (options) {
+    // deep参数为了监听更深层级值的变化
     this.deep = !!options.deep;
+    // user参数表明cb是用户传入的，需要注意容错
     this.user = !!options.user;
+    // lazy用在computed实现上，dep通知数据更新后仅仅标识当前数据是脏数据
     this.lazy = !!options.lazy;
+    // sync参数表示dep通知数据更新后是否同步更新
     this.sync = !!options.sync;
   } else {
     this.deep = this.user = this.lazy = this.sync = false;
   }
+  // 数据更新后要执行的回调
   this.cb = cb;
-  this.id = ++uid$2; // uid for batching
+  // 唯一id
+  this.id = ++uid$2;
+  // 表示这个watcher是否还有用
   this.active = true;
-  this.dirty = this.lazy; // for lazy watchers
 
-  // 存放相关dep实例
+  // 标记lazy watcher初始数据为脏
+  this.dirty = this.lazy; 
+
+  // 和dep相关联需要的几个属性
   this.deps = [];
   this.newDeps = [];
-
-  // 存放相关dep实例的id，用集合实现
   this.depIds = new _Set();
   this.newDepIds = new _Set();
-  this.expression = expOrFn.toString();
-  // parse expression for getter
 
-  // 数据获取函数
+  // 调试时用到
+  this.expression = expOrFn.toString();
+
+
+  // getter是值获取函数
   if (typeof expOrFn === 'function') {
     this.getter = expOrFn;
   } else {
@@ -44,24 +56,28 @@ var Watcher = function Watcher (vm,expOrFn,cb,options) {
       );
     }
   }
-  this.value = this.lazy
-    ? undefined
-    : this.get();
+  // watcher的值
+  this.value = this.lazy? undefined : this.get();
 };
-```
 
-知道了watcher实例上有哪些属性之后，我们需要回答以下几个问题：
+Dep.target = null;
+// TODO 想不明白为啥非要用个栈
+var targetStack = [];
+function pushTarget (_target) {
+  if (Dep.target) { targetStack.push(Dep.target); }
+  Dep.target = _target;
+}
+function popTarget () {
+  Dep.target = targetStack.pop();
+}
 
-* watcher和dep是如何建立联系的
-* watcher是如何更新与dep建立的联系
-
-#### watcher和dep是如何建立联系的
-
-```javascript
+// 实现依赖收集，获得计算值
 Watcher.prototype.get = function get () {
+  // 将该watcher挂在Dep.target上
   pushTarget(this);
   var value;
   var vm = this.vm;
+  // 因为是用户传进来的getter，容错
   if (this.user) {
     try {
       value = this.getter.call(vm, vm);
@@ -71,59 +87,44 @@ Watcher.prototype.get = function get () {
   } else {
     value = this.getter.call(vm, vm);
   }
-  // "touch" every property so they are all tracked as
-  // dependencies for deep watching
+
+  // deep所做的就是递归，让更深的dep关联到watcher
   if (this.deep) {
     traverse(value);
   }
   popTarget();
+
+  // 完成依赖的更新
   this.cleanupDeps();
   return value
 };
 
-Dep.target = null;
-var targetStack = [];
-
-function pushTarget (_target) {
-  if (Dep.target) { targetStack.push(Dep.target); }
-  Dep.target = _target;
-}
-
-function popTarget () {
-  Dep.target = targetStack.pop();
-}
-```
-
-watcher实例先把自身挂到了```Dep.target```上，然后调用```this.getter.call(vm, vm)```去获取相关的数据，在相应数据的getter函数中(在观察对象那一节)，dep和watcher建立联系。
-
-#### watcher是如何更新与dep建立的联系
-
-与这个问题相关的还有为什么有了deps属性，还要有newDeps属性？为什么dep添加依赖有```depend```和```addSub```两个方法？
-
-```javascript
+// 添加依赖
 Watcher.prototype.addDep = function addDep (dep) {
   var id = dep.id;
   if (!this.newDepIds.has(id)) {
-    // watcher建立与dep的关联
     this.newDepIds.add(id);
     this.newDeps.push(dep);
-    // dep建立到watcher的关联
     if (!this.depIds.has(id)) {
       dep.addSub(this);
     }
   }
 };
-Watcher.prototype.cleanupDeps = function cleanupDeps () {
-  var this$1 = this;
 
+// 解除不再需要的dep和watcher的关系
+Watcher.prototype.cleanupDeps = function cleanupDeps () {
+    var this$1 = this;
+
+  // 消除不再需要的dep到watcher的关系
   var i = this.deps.length;
-  // watcher现在不需要依赖的dep，dep要切断和watcher的关系
   while (i--) {
     var dep = this$1.deps[i];
     if (!this$1.newDepIds.has(dep.id)) {
       dep.removeSub(this$1);
     }
   }
+
+  // 更新当前的依赖
   var tmp = this.depIds;
   this.depIds = this.newDepIds;
   this.newDepIds = tmp;
@@ -133,6 +134,83 @@ Watcher.prototype.cleanupDeps = function cleanupDeps () {
   this.newDeps = tmp;
   this.newDeps.length = 0;
 };
+
+
+// dep通知watcher时的入口函数
+Watcher.prototype.update = function update () {
+  // lazy watcher 仅仅表示数据是脏的，必要的时候通过evaluate获取数据
+  if (this.lazy) {
+    this.dirty = true;
+  } 
+  // 同步更新的watcher 同步调用回调
+  else if (this.sync) {
+    this.run();
+  } 
+  // 异步更新的watcher加入到更新队列
+  else {
+    queueWatcher(this);
+  }
+};
+
+// 调用回调
+Watcher.prototype.run = function run () {
+  if (this.active) {
+    var value = this.get();
+    if (
+      value !== this.value || isObject(value) || this.deep) {
+      // 设定新值
+      var oldValue = this.value;
+      this.value = value;
+      // 执行回调，还要容错
+      if (this.user) {
+        try {
+          this.cb.call(this.vm, value, oldValue);
+        } catch (e) {
+          handleError(e, this.vm, ("callback for watcher \"" + (this.expression) + "\""));
+        }
+      } else {
+        this.cb.call(this.vm, value, oldValue);
+      }
+    }
+  }
+};
+
+// 用于lazy watcher
+Watcher.prototype.evaluate = function evaluate () {
+  this.value = this.get();
+  this.dirty = false;
+};
+
+// TODO 没想明白是做啥的
+Watcher.prototype.depend = function depend () {
+    var this$1 = this;
+
+  var i = this.deps.length;
+  while (i--) {
+    this$1.deps[i].depend();
+  }
+};
+
+
+// 解除和vue实例、dep实例的关系，标记为不再活动
+Watcher.prototype.teardown = function teardown () {
+  var this$1 = this;
+
+  if (this.active) {
+    // 解除vm对watcher的关系
+    if (!this.vm._isBeingDestroyed) {
+      remove(this.vm._watchers, this);
+    }
+    // 解除dep对watcher的依赖
+    var i = this.deps.length;
+    while (i--) {
+      this$1.deps[i].removeSub(this$1);
+    }
+    this.active = false;
+  }
+};
 ```
 
-对于watcher而言，当需要更新依赖时，它先把新依赖暂存，然后与旧依赖对比，新依赖的dep实例添加对watcher的关系，watcher不需要依赖的dep，需要dep切断和watcher的关系。```depIds```和```newDepIds```用了集合来存储depId，是为了高效判断是否包含depId（O(1)）。
+Watcher原型链上的方法看起来比较多，我们可以先分下类：```get```、```addDep```、```cleanupDeps```这三个方法是用来与dep互相关联使用的，```get```和```evaluate```是用来获取watcher的值的,```update```是暴露出去的让dep通知的入口，```run```方法是执行watcher的回调的入口，最后一个```teardown```用来取消观察停止回调。
+
+到这里我们已经掌握了依赖收集机制必要的知识，现在我们理一遍流程：当watcher要收集依赖时，它会调用```get```方法，把watcher本身挂载到```Dep.target```上，然后watcher调用```getter```函数，我们去获取响应式的属性，这样就走到了属性的get方法(defineReactive方法的结果)，在属性的get方法中，dep调用```depend```方法，```depend```方法再调用watcher的```addDep```方法，这样watcher和dep就建立了联系，最后watcher调用```cleanupDeps```方法，把那些曾经关联到watchr但现在不再关联到watcher的dep的到watcher的关系取消掉。
