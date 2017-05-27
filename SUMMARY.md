@@ -11,7 +11,6 @@
 * [初始化](init/README.md)
 	* [预处理策略](init/strats.md)
 	* [methods初始化](init/methods.md)
-	* [Observer](init/observer.md)
 	* [computed初始化](init/computed.md)
 	* [watch初始化](init/watch.md)
 * [mixin](mixin.md)
