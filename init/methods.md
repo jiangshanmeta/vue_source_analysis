@@ -4,6 +4,7 @@
 function initMethods (vm, methods) {
   var props = vm.$options.props;
   for (var key in methods) {
+    // 绑定到vue实例上，解决this指向
     vm[key] = methods[key] == null ? noop : bind(methods[key], vm);
     {
       if (methods[key] == null) {

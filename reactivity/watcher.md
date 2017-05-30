@@ -61,7 +61,7 @@ var Watcher = function Watcher (vm,expOrFn,cb,options) {
 };
 
 Dep.target = null;
-// TODO 想不明白为啥非要用个栈
+
 var targetStack = [];
 function pushTarget (_target) {
   if (Dep.target) { targetStack.push(Dep.target); }
@@ -181,7 +181,7 @@ Watcher.prototype.evaluate = function evaluate () {
   this.dirty = false;
 };
 
-// TODO 没想明白是做啥的
+// watcher 嵌套引用时候需要
 Watcher.prototype.depend = function depend () {
     var this$1 = this;
 
@@ -214,3 +214,6 @@ Watcher.prototype.teardown = function teardown () {
 Watcher原型链上的方法看起来比较多，我们可以先分下类：```get```、```addDep```、```cleanupDeps```这三个方法是用来与dep互相关联使用的，```get```和```evaluate```是用来获取watcher的值的,```update```是暴露出去的让dep通知的入口，```run```方法是执行watcher的回调的入口，最后一个```teardown```用来取消观察停止回调。
 
 到这里我们已经掌握了依赖收集机制必要的知识，现在我们理一遍流程：当watcher要收集依赖时，它会调用```get```方法，把watcher本身挂载到```Dep.target```上，然后watcher调用```getter```函数，我们去获取响应式的属性，这样就走到了属性的get方法(defineReactive方法的结果)，在属性的get方法中，dep调用```depend```方法，```depend```方法再调用watcher的```addDep```方法，这样watcher和dep就建立了联系，最后watcher调用```cleanupDeps```方法，把那些曾经关联到watchr但现在不再关联到watcher的dep的到watcher的关系取消掉。
+
+
+之前一直没想明白为什么要用```targetStack```。考虑这么一个场景：computed属性A需要用到computed属性B，调用A对应watcher(watcherA)的get方法时，会先把A对应watcher先挂到```Dep.target```上，然后会调用watcherA的getter方法，在getterA的某个阶段会访问属性B，B的watcher也会调用对应的get方法，也需要收集依赖，这时我们需要暂存watcherA(入targetStack)，然后把watcherB挂到```Dep.target```上。这种嵌套依赖需要```targetStack```辅助。还有一个问题，watcherB依赖的Dep实例，watcherA是否也需要依赖？答案是肯定的，毕竟watcherB不能把自身变化通知给watcherA，负责这个的是watcher原型链上的```depend```方法。在computed的具体实现中我们会看到它是如何运用的。

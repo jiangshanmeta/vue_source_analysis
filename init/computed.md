@@ -18,7 +18,7 @@ function initComputed (vm, computed) {
         getter = noop;
       }
     }
-    // create internal watcher for the computed property.
+
     // 通过watcher实现computed功能
     watchers[key] = new Watcher(vm, getter, noop, computedWatcherOptions);
 
@@ -36,10 +36,11 @@ function initComputed (vm, computed) {
 }
 ```
 
-关于computed对应的watcher的选项有必要多说两句。```var computedWatcherOptions = { lazy: true };```。这个设定使得dep通知watcher数据变化时，watcher并不立即重新计算相应的值，而是先标记一下当前数据有误，当我们真的需要这个计算属性的时候再去计算(下面代码中```evaluate```方法)。
+关于computed对应的watcher的选项有必要多说两句。```var computedWatcherOptions = { lazy: true };```。这个设定使得dep通知watcher数据变化时，watcher并不立即重新计算相应的值，而是先标记一下当前数据是脏数据，当我们真的需要这个计算属性的时候再去计算(下面代码中```evaluate```方法)。
 
 
 ```javascript
+// 绑定到vm上
 function defineComputed (target, key, userDef) {
   if (typeof userDef === 'function') {
     sharedPropertyDefinition.get = createComputedGetter(key);
@@ -64,16 +65,22 @@ function createComputedGetter (key) {
     if (watcher) {
       // 标记数据有误，获取当前数据，否则直接返回缓存值
       if (watcher.dirty) {
+        // evaluate 方法是lazy watcher专用
         watcher.evaluate();
       }
+
+
       if (Dep.target) {
         watcher.depend();
       }
 
+      // computed最终返回的是watcher的值
       return watcher.value
     }
   }
 }
 ```
 
-computed的每个属性绑定在vm上是通过```Object.defineProperty```实现的，类似的还有我们传入的data属性。
+computed的每个属性绑定在vm上是通过```Object.defineProperty```实现的。
+
+最后要说明的是```watcher.depend();```这句话是干啥的。在讲Watcher的时候，提到过一个嵌套的问题，还是以当时的例子为例，当我们调用完watcherB的evaluate方法后，watcherB的依赖收集已经完成，现在```Dep.target```上挂的是watcherA，watcherA需要和watcherB所依赖的所有dep实例建立关联，所以这里watcherB调用depend方法，使相应的dep实例与watcherA建立关联。
