@@ -22,3 +22,5 @@
 	* [$once](event/once.md)
 	* [$emit](event/emit.md)
 * [Render](render/README.md)
+
+* [插件](plugin.md)
