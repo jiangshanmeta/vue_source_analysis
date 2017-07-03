@@ -21,6 +21,8 @@
 	* [$off](event/off.md)
 	* [$once](event/once.md)
 	* [$emit](event/emit.md)
-* [Render](render/README.md)
-
+* [Virtual DOM](virtualdom/README.md)
+	[VNode](virtualdom/vnode.md)
+	[patch](virtualdom/patch.md)
 * [插件](plugin.md)
+* [创建Vue子类](extend.md)
