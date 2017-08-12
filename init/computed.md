@@ -46,12 +46,15 @@ function defineComputed (target, key, userDef) {
     sharedPropertyDefinition.get = createComputedGetter(key);
     sharedPropertyDefinition.set = noop;
   } else {
-    // 这个cache选项是用来控制用缓存值还是重新计算新值
+    // 计算getter默认是从watcher中获取值
+    // 通过设置cache属性控制getter是否强制重算
     sharedPropertyDefinition.get = userDef.get
       ? userDef.cache !== false
         ? createComputedGetter(key)
         : userDef.get
       : noop;
+
+    // 允许设定计算setter
     sharedPropertyDefinition.set = userDef.set
       ? userDef.set
       : noop;
