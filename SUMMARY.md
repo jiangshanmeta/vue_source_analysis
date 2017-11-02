@@ -12,6 +12,7 @@
 * [初始化](init/README.md)
 	* [预处理策略](init/strats.md)
 	* [provide/inject](init/provide_inject.md)
+	* [props/propsData](init/props.md)
 	* [methods初始化](init/methods.md)
 	* [data初始化](init/data.md)
 	* [computed初始化](init/computed.md)
