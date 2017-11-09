@@ -21,6 +21,7 @@ Vue.use = function (plugin) {
 	var args = toArray(arguments, 1);
 
 	// 第一个参数是Vue构造函数
+	// 对于子类来说是子类的构造函数，这样可以把插件作用域限定在子类，不污染全局
 	args.unshift(this);
 
 	// 调用插件安装函数，注册插件
