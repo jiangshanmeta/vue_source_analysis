@@ -30,5 +30,5 @@
 	* [mixin](global/mixin.md)
 	* [插件](global/plugin.md)
 * [Virtual DOM](virtualdom/README.md)
-	[VNode](virtualdom/vnode.md)
-	[patch](virtualdom/patch.md)
+	* [VNode](virtualdom/vnode.md)
+	* [patch](virtualdom/patch.md)
