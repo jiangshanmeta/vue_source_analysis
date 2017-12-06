@@ -32,3 +32,5 @@
 * [Virtual DOM](/virtualdom/README.md)
 	* [VNode](/virtualdom/vnode.md)
 	* [patch](/virtualdom/patch.md)
+
+* [vuex](vuex.md)
