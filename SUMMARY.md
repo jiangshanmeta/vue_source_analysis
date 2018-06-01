@@ -32,5 +32,6 @@
 * [Virtual DOM](/virtualdom/README.md)
 	* [VNode](/virtualdom/vnode.md)
 	* [patch](/virtualdom/patch.md)
-
+* 组件
+	* [异步组件](/component/async_component.md)
 * [vuex](vuex.md)
